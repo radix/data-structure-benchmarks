@@ -1,5 +1,8 @@
 import sys
 
+import six
+from six.moves import range
+
 import timeit
 
 from pysistence import make_list
@@ -24,34 +27,34 @@ from pyrsistent import v, s
 # Appending
 def pysistence_vectors_append(size):
     l = make_list(0)
-    for i in xrange(size):
+    for i in range(size):
         l = l.concat(make_list(i))
 
 def pyrsistent_vectors_append(size):
     l = v(0)
-    for i in xrange(size):
+    for i in range(size):
         l = l.append(i)
 
 def mutable_vectors_append(size):
     l = [0]
-    for i in xrange(size):
+    for i in range(size):
         l.append(i)
 
 
 # Pushing
 def pysistence_vectors_push(size):
     l = make_list([0])
-    for i in xrange(size):
+    for i in range(size):
         l = l.cons(i)
 
 def pyrsistent_vectors_push(size):
     l = v(0)
-    for i in xrange(size):
+    for i in range(size):
         l = v(i).extend(l)
 
 def mutable_vectors_push(size):
     l = [0]
-    for i in xrange(size):
+    for i in range(size):
         l.insert(0, i)
 
 
@@ -59,18 +62,18 @@ def mutable_vectors_push(size):
 
 def pysistence_vectors_mutate(size):
     l = make_list(*range(size))
-    for i in xrange(size):
+    for i in range(size):
         l = _pys_set(i, 'new-value', l)
 
 def pyrsistent_vectors_mutate(size):
     l = v(*range(size))
-    for i in xrange(size):
+    for i in range(size):
         l = l.assoc(i, 'new-value')
 
 
 def mutable_vectors_mutate(size):
-    l = range(size)[:] # copy the list just to be a little bit fair to how we construct the lists in other tests.
-    for i in xrange(size):
+    l = list(range(size)) # copy the list just to be a little bit fair to how we construct the lists in other tests.
+    for i in range(size):
         l[i] = 'new-value'
 
 
@@ -85,7 +88,7 @@ def _pys_take(n, l):
 
 def _pys_drop(n, l):
     origl = l
-    for i in xrange(n):
+    for i in range(n):
         l = l.rest
     return l
 
@@ -115,22 +118,35 @@ def repeat(f, vector_size):
     return sum(results) / len(results)
 
 
+# library
+MUTABLE = 'built-in mutable'
+PYRSISTENT = 'pyrsistent'
+PYSISTENCE = 'pysistence'
+
+# operations
+VECTOR_APPEND = 'vector append'
+VECTOR_PUSH = 'vector push'
+VECTOR_MUTATE = 'vector mutate'
+
+benchmarks = [
+    (MUTABLE, VECTOR_APPEND, mutable_vectors_append),
+    (PYRSISTENT, VECTOR_APPEND, pyrsistent_vectors_append),
+    (PYSISTENCE, VECTOR_APPEND, pysistence_vectors_append),
+
+    (MUTABLE, VECTOR_PUSH, mutable_vectors_push),
+    (PYRSISTENT, VECTOR_PUSH, pyrsistent_vectors_push),
+    (PYSISTENCE, VECTOR_PUSH, pysistence_vectors_push),
+
+    (MUTABLE, VECTOR_MUTATE, mutable_vectors_mutate),
+    (PYRSISTENT, VECTOR_MUTATE, pyrsistent_vectors_mutate),
+    (PYSISTENCE, VECTOR_MUTATE, pysistence_vectors_mutate),
+]
+
+
 for size in sys.argv[1:]:
     size = int(size)
-    for desc, func in [
-        ("mutable vectors append", mutable_vectors_append),
-        ("pyrsistent vectors append", pyrsistent_vectors_append),
-        ("pysistence vectors append", pysistence_vectors_append),
-
-        ("mutable vectors push", mutable_vectors_push),
-        ("pyrsistent vectors push", pyrsistent_vectors_push),
-        ("pysistence vectors push", pysistence_vectors_push),
-
-        ("mutable vectors mutate", mutable_vectors_mutate),
-        ("pyrsistent vectors mutate", pyrsistent_vectors_mutate),
-        ("pysistence vectors mutate", pysistence_vectors_mutate),
-        ]:
-        print "{} (size {}): {}".format(desc, size, repeat(func, size))
+    for lib, op, func in benchmarks:
+        print("{} {} (size {}): {}".format(lib, op, size, repeat(func, size)))
 
 
 # TODO:
