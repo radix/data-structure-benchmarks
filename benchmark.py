@@ -9,20 +9,6 @@ import timeit
 from pysistence import make_list
 from pyrsistent import v, s
 
-# Usability notes
-
-# PYSISTENCE:
-# - bugs:
-#   - EmptyList doesn't support a bunch of operations (concat)
-#   - they left a "print" statement in the implementation of "concat", annoying
-# - missing functions:
-#   - take(n) -> return first n elements
-#   - drop(n) -> return all after first n elements
-#   - insert(i, v) -> insert an element between others
-#   - assoc(i, v) -> replace an element by index
-
-# PYRSISTENT:
-# - no insert, but they do have assoc.
 
 # library
 MUTABLE = 'built-in mutable'
@@ -139,12 +125,14 @@ for size in sys.argv[1:]:
     print "mutable versions are left to grow between operations, so timings may be skewed."
     print
     for lib, op, func in benchmarks(size):
-        result = timeit.timeit(func, number=10000)
+        result = timeit.timeit(setup='gc.enable()', stmt=func, number=10000)
         milliseconds = result * 1000
         print("{:<20} {:<25} {:>22.2f} milliseconds".format(lib, op, milliseconds))
 
 
 # ANALYSIS OF RESULTS:
+
+# right now, *all* of this analysis is about vectors. Maps to come.
 
 # PYSISTENCE
 # - pysistence concat is extremely slow, because it's just a linked list,
@@ -179,3 +167,25 @@ for size in sys.argv[1:]:
 
 # - Apparently RRB-Trees and finger-trees are both better than all of these
 #   things at insertion.
+
+# - in general: use pyrsistent by default. It's only slower than mutable
+#   vectors by a generally unnoticeable amount, and it gives you the benefits
+#   of persistent data structures. Pysistence is pretty buggy, and linked lists
+#   are slow. If you reeeaaally need fast insertion on large lists, then
+#   you probably should go back to mutable Python lists.
+
+# Usability notes
+
+# PYSISTENCE:
+# - bugs:
+#   - EmptyList doesn't support a bunch of operations: https://bitbucket.org/jasbaker/pysistence/issue/7/make_list-returns-emptylist-which-doesnt
+#   - they left a "print" statement in the implementation of concat: https://bitbucket.org/jasbaker/pysistence/issue/8/print-statement-left-in-concat
+# - missing functions:
+#   - take(n) -> return first n elements
+#   - drop(n) -> return all after first n elements
+#   - insert(i, v) -> insert an element between others - understandable because it's not an efficient operation?
+#   - assoc(i, v) -> replace an element by index - understandable because it's not an efficient operation?
+
+# PYRSISTENT:
+# - no insert - understandable because it's not an efficient operation?
+
